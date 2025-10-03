@@ -1,37 +1,30 @@
 # Mines Bot Configuration File
-# Configuration template for Mines Bot
+# All settings can be overridden by command line arguments
 
-# Game Settings
-game:
-  amount: 0.01                # Initial bet amount
-  currency: "trx"            # Currency (trx, usdt, doge, ltc, btc, eth, bch, xrp, eos, bnb)
-  mines: 7                   # Number of mines in the game
-  shots: 2                   # Number of shots per game
+# Access token (required)
+access_token: "your_access_token_here"
 
-# Selection Strategy
-selection:
-  mode: "random"              # Selection mode: "row", "random", "smart"
-  retry: 3                   # Number of retries on same row before switching
-  single_shot_mode: "loss-switch"  # Single shot mode: "fixed", "win-return", "win-stay", "loss-switch"
+# Betting settings
+amount: 0.05              # Bet amount
+currency: "trx"           # Currency: usdt, trx, doge, ltc, btc, eth, bch, xrp, eos, bnb
+mines: 3                  # Number of mines (1-24)
+shots: 5                  # Number of shots per game (1-20)
 
-# Martingale Strategy
-martingale:
-  enabled: false             # Enable Martingale strategy
-  multiplier: 4.0           # Multiplier on loss
-  wins: 4                   # Consecutive wins required to reset
-  max_levels: 10            # Maximum levels before reset
+# Selection mode
+mode: "smart"             # Field selection: row, random, smart, heatmap, pattern
+retry: 3                  # Row retry count (for row mode only)
+single_shot_mode: "win-stay"  # Single shot mode: fixed, win-return, win-stay, loss-switch
 
-# Win Step Strategy
-win_step:
-  enabled: true            # Enable Win Step strategy
-  multiplier: 2.0          # Multiplier on consecutive wins
-  wins: 3                  # Consecutive wins required to reset
-  array: [1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,7,8,9,11,12,14,16,18,21,24,27,31,36,41,47,54,62,71,81,93,106,121,136,153,172,193,216]
+# Betting strategy
+martingale: false         # Enable Martingale strategy
+wins: 4                   # Consecutive wins to reset Martingale
+multiplier: 4.0           # Martingale multiplier on loss
+max_martingale: 10        # Max martingale levels before reset
 
-# Authentication
-auth:
-  token: ""                  # Access token (leave empty to use token.txt)
+# Win Step strategy (alternative to Martingale)
+win_step: false           # Enable Win Step strategy
+win_step_multiplier: 2.0  # Win Step multiplier
+win_step_wins: 3          # Consecutive wins to reset to step 0
 
-# Advanced Settings
-advanced:
-  take_profit: 0            # Take profit target (0 = disabled)
+# Take profit
+take_profit: 0            # Take profit target (0 = disabled)
