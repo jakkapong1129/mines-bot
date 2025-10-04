@@ -129,31 +129,21 @@ class MinesBot:
 
             field_weights[field] = max(weight, 0.1)  # Minimum weight of 10%
 
-        # Select field based on weights
+        # Weighted random selection
         fields = list(field_weights.keys())
         weights = list(field_weights.values())
 
-        if not fields:
-            return random.choice(available_fields) if available_fields else None
-
-        # For single shot mode (max_shots=1), select the field with highest weight
-        # This gives the most accurate/safest selection
-        if self.max_shots == 1:
-            # Find maximum weight
-            max_weight = max(weights)
-            # Get all fields with maximum weight
-            best_fields = [f for f, w in field_weights.items() if w == max_weight]
-            # If multiple fields have same max weight, randomly choose among them
-            selected_field = random.choice(best_fields)
-            return selected_field
-
-        # For multi-shot mode, use weighted random selection
+        # Normalize weights
         total_weight = sum(weights)
         if total_weight > 0:
             weights = [w / total_weight for w in weights]
+
+            # Use weighted random choice
             selected_field = random.choices(fields, weights=weights, k=1)[0]
+
             return selected_field
         else:
+            # Fallback to pure random if weights fail
             return random.choice(available_fields)
 
     def heatmap_selection(self, available_fields):
@@ -250,7 +240,14 @@ class MinesBot:
             self.used_fields = []
             # Don't reset selected_row here - let next_bet() handle row selection strategy
             
-            # Simplified bet confirmation (removed panel)
+            # Create a beautiful panel for the bet amount response
+            bet_info = f"[bold green]Bet Placed Successfully![/bold green]\n"
+            bet_info += f"[cyan]Amount:[/cyan] {amount} {currency.upper()}\n"
+            bet_info += f"[cyan]Mines Count:[/cyan] {mines_count}\n"
+            bet_info += f"[cyan]Game ID:[/cyan] {self.identifier}"
+            
+            panel = Panel(bet_info, title="[bold blue]💣 Mines Bet[/bold blue]", border_style="blue")
+            console.print(panel)
             
             return result
         except Exception as e:
@@ -263,6 +260,7 @@ class MinesBot:
             # Special case: If max_shots = 1, alternate between field 0 and 1
             if self.max_shots == 1:
                 field_number = self.single_shot_field
+                console.print(f"[bold cyan]🎯 Single shot mode: Using field {field_number}[/bold cyan]")
             # Check selection mode
             elif self.selection_mode == "random":
                 # Pure random selection - avoid used fields
@@ -385,13 +383,14 @@ class MinesBot:
                     latest_round = mines_next["state"]["rounds"][-1]
                     field = latest_round["field"]
                     payout_multiplier = latest_round["payoutMultiplier"]
-                    # Removed field safe message
+                    console.print(f"[green]✅ Field {field} safe! Multiplier: {payout_multiplier:.4f}x[/green]")
 
                     # Update heatmap for safe field (for heatmap mode)
                     if self.selection_mode == "heatmap":
                         self.safe_heatmap[field] += 1
             else:
-                # Game ended (active: false) - hit mine (removed message)
+                # Game ended (active: false) - hit mine
+                console.print(f"[bold red]💥 Hit a Mine! Game ended[/bold red]")
 
                 # Update heatmap for mine field (for heatmap mode)
                 if self.selection_mode == "heatmap" and field_number is not None:
@@ -440,7 +439,13 @@ class MinesBot:
                 for field in self.used_fields:
                     self.safe_heatmap[field] += 1
 
-            # Simplified cash out (removed panel)
+            # Create a success panel for cash out
+            cash_info = f"[bold green]Cash Out Successful![/bold green]\n"
+            cash_info += f"[cyan]Game ID:[/cyan] {self.identifier}\n"
+            cash_info += f"[cyan]Status:[/cyan] Completed"
+
+            panel = Panel(cash_info, title="[bold green]💰 Cash Out[/bold green]", border_style="green")
+            console.print(panel)
 
             return result
         except Exception as e:
@@ -471,7 +476,6 @@ class MinesBot:
             
             # Check if game ended (hit mine)
             if isinstance(result, dict) and result.get("game_over"):
-                console.print(f"[red]❌ LOSS (Hit Mine)[/red]")
                 return -self.current_bet_amount
 
             # Check if game is still active
@@ -511,10 +515,33 @@ class MinesBot:
                     result_title = "[bold yellow]🏆 Game Results - BREAK EVEN[/bold yellow]"
                     result_style = "yellow"
             
-            # Win message (cashed out successfully)
+            # Display final results
+            payout_info = f"[bold yellow]Final Results:[/bold yellow]\n"
+            payout_info += f"[cyan]Shots Made:[/cyan] {shots_made}/{self.max_shots}\n"
+            payout_info += f"[cyan]Bet Amount:[/cyan] {bet_amount} {currency.upper()}\n"
+            payout_info += f"[cyan]Payout Amount:[/cyan] {payout_amount} {currency.upper()}\n"
+            payout_info += f"[cyan]Payout Multiplier:[/cyan] {data_cashout['minesCashout']['payoutMultiplier']}\n"
+            
+            # Color code profit/loss
             if payout > 0:
-                console.print(f"[green]✅ WIN: +{payout:.4f}[/green]")
-            # If payout <= 0 but cashed out, don't show message (break even or small loss)
+                profit_text = f"[bold green]Profit: +{payout}[/bold green]"
+            elif payout < 0:
+                profit_text = f"[bold red]Loss: {payout}[/bold red]"
+            else:
+                profit_text = f"[bold yellow]Break Even: {payout}[/bold yellow]"
+            
+            payout_info += f"[cyan]Net Result:[/cyan] {profit_text}"
+            
+            result_panel = Panel(payout_info, title=result_title, border_style=result_style)
+            console.print(result_panel)
+        else:
+            # Game ended with loss
+            loss_info = f"[bold red]Game Lost![/bold red]\n"
+            loss_info += f"[cyan]Bet Amount:[/cyan] {self.current_bet_amount} {currency.upper()}\n"
+            loss_info += f"[red]Net Result: -{self.current_bet_amount}[/red]"
+
+            result_panel = Panel(loss_info, title="[bold red]� Game Results[/bold red]", border_style="red")
+            console.print(result_panel)
         
         # Return payout and last multiplier for Martingale calculation
         last_multiplier = 1.125  # Default multiplier for mines
@@ -534,19 +561,28 @@ class MinesBot:
                 # Mode 2: Loss→switch, Win→return to 0
                 if won:
                     self.single_shot_field = 0
+                    console.print(f"[bold green]✅ Win! Return to field {self.single_shot_field}[/bold green]")
                 else:
-                    self.single_shot_field = 24
+                    self.single_shot_field = 11
+                    console.print(f"[bold yellow]⚠️ Loss! Switch to field {self.single_shot_field}[/bold yellow]")
             elif self.single_shot_mode == "win-stay":
                 # Mode 3: Loss→switch, Win→stay
-                if not won:
+                if won:
+                    console.print(f"[bold green]✅ Win! Stay at field {self.single_shot_field}[/bold green]")
+                else:
                     self.single_shot_field = 1 if self.single_shot_field == 0 else 0
+                    console.print(f"[bold yellow]⚠️ Loss! Switch to field {self.single_shot_field}[/bold yellow]")
             elif self.single_shot_mode == "loss-switch":
                 # Mode 4: Loss→switch, Win at field 1→return to 0, Win at field 0→stay
                 if won:
                     if self.single_shot_field == 24:
                         self.single_shot_field = 0
+                        console.print(f"[bold green]✅ Win at field 1! Return to field 0[/bold green]")
+                    else:
+                        console.print(f"[bold green]✅ Win at field 0! Stay at field 0[/bold green]")
                 else:
                     self.single_shot_field = 24 if self.single_shot_field == 0 else 0
+                    console.print(f"[bold yellow]⚠️ Loss! Switch to field {self.single_shot_field}[/bold yellow]")
 
         # Win Step Strategy
         if self.use_win_step:
@@ -559,9 +595,11 @@ class MinesBot:
                     self.current_step = 0
                     self.win_step_consecutive_wins = 0
                     self.current_bet_amount = self.base_bet_amount * self.win_step_array[self.current_step]
+                    console.print(f"[bold green]🎯 {self.win_step_wins} Wins! Reset to step 0 | Bet: {self.current_bet_amount:.4f}[/bold green]")
                 else:
                     # Continue martingale on wins
                     self.current_bet_amount *= self.win_step_multiplier
+                    console.print(f"[bold green]✅ Win {self.win_step_consecutive_wins}/{self.win_step_wins} | Next bet: {self.current_bet_amount:.4f} (x{self.win_step_multiplier})[/bold green]")
             else:
                 # Loss: reset win counter and move to next step
                 self.win_step_consecutive_wins = 0
@@ -569,12 +607,16 @@ class MinesBot:
                 # Move to next step in array
                 if self.current_step < len(self.win_step_array) - 1:
                     self.current_step += 1
+                else:
+                    # Already at max step, stay there
+                    console.print(f"[bold red]⚠️ Max step reached ({self.current_step})![/bold red]")
 
                 # Update max step reached
                 if self.current_step > self.max_step_reached:
                     self.max_step_reached = self.current_step
 
                 self.current_bet_amount = self.base_bet_amount * self.win_step_array[self.current_step]
+                console.print(f"[bold red]📉 Loss! Step {self.current_step} | Bet: {self.current_bet_amount:.4f}[/bold red]")
 
             return
 
@@ -598,6 +640,7 @@ class MinesBot:
 
             # Track consecutive wins
             self.consecutive_wins += 1
+            console.print(f"[bold green]✅ Win! Reset to base bet {self.base_bet_amount:.4f} | Wins: {self.consecutive_wins}[/bold green]")
         else:
             # Reset wins counter when lost
             self.consecutive_wins = 0
@@ -608,6 +651,8 @@ class MinesBot:
 
             # Check if we've reached max martingale levels
             if self.consecutive_losses >= self.max_martingale:
+                console.print(f"[bold red]🛑 Max Level ({self.max_martingale})! Reset to base[/bold red]")
+
                 # Reset martingale system
                 self.consecutive_losses = 0
                 self.consecutive_wins = 0
@@ -616,6 +661,8 @@ class MinesBot:
             else:
                 # Configurable Martingale: Use custom multiplier
                 self.current_bet_amount = self.base_bet_amount * (self.martingale_multiplier ** self.consecutive_losses)
+
+                console.print(f"[bold red]📈 Next bet: {self.current_bet_amount:.4f} | Loss {self.consecutive_losses}/{self.max_martingale}[/bold red]")
 
     def get_balance(self, currency="usdt"):
         # Request body (GraphQL query)
@@ -867,7 +914,7 @@ if __name__ == "__main__":
     wins = 0
     losses = 0
     break_evens = 0
-    max_consecutive_losses = 0  # Track maximum Martingale level (max losses in a row)
+    max_consecutive_losses = 0  # Track maximum Martingale level
     
     # Create bot instance with betting strategy settings
     bot = MinesBot(access_token=access_token, bet_amount=args.amount, use_martingale=args.martingale,
@@ -929,7 +976,7 @@ if __name__ == "__main__":
             
             # Track maximum consecutive losses for Martingale
             max_consecutive_losses = max(max_consecutive_losses, bot.consecutive_losses)
-
+            
             # Track win/loss statistics
             if payout > 0:
                 wins += 1
@@ -937,7 +984,7 @@ if __name__ == "__main__":
                 losses += 1
             else:
                 break_evens += 1
-
+            
             games_played += 1
             
             # Check Take Profit target
@@ -957,35 +1004,53 @@ if __name__ == "__main__":
                         console.print(f"[bold red]⚠️ Insufficient balance! Stopping bot[/bold red]")
                         break
             
-            # Show important statistics after each game
+            # Show real-time statistics after each game
             win_rate = (wins / games_played * 100) if games_played > 0 else 0
-
-            # Get current balance
+            
+            # Get current balance for live stats
             current_balance = bot.get_balance(args.currency)
-            balance_display = f"{current_balance:.4f}" if current_balance is not None else "N/A"
-
+            balance_display = f"{current_balance:.4f} {args.currency.upper()}" if current_balance is not None else "N/A"
+            
+            realtime_stats = f"[bold cyan]📊 Current Session Stats:[/bold cyan]\n"
+            realtime_stats += f"[cyan]Games:[/cyan] {games_played} | "
+            realtime_stats += f"[green]Wins:[/green] {wins} | "
+            realtime_stats += f"[red]Losses:[/red] {losses} | "
+            realtime_stats += f"[yellow]Break Evens:[/yellow] {break_evens}\n"
+            realtime_stats += f"[blue]Win Rate:[/blue] {win_rate:.1f}% | "
+            realtime_stats += f"[magenta]Balance:[/magenta] {balance_display}\n"
+            
             # Color code total profit/loss
             if total_payout > 0:
-                profit_display = f"[green]+{total_payout:.4f}[/green]"
+                profit_display = f"[bold green]Profit: +{total_payout:.4f}[/bold green]"
             elif total_payout < 0:
-                profit_display = f"[red]{total_payout:.4f}[/red]"
+                profit_display = f"[bold red]Loss: {total_payout:.4f}[/bold red]"
             else:
-                profit_display = f"[yellow]{total_payout:.4f}[/yellow]"
-
-            # Compact statistics display
-            stats_line = f"[cyan]Games: {games_played} | W: {wins} L: {losses} | WinRate: {win_rate:.1f}% | Balance: {balance_display} | Total: {profit_display} | MaxLossStreak: {max_consecutive_losses}"
-
+                profit_display = f"[bold yellow]Even: {total_payout:.4f}[/bold yellow]"
+            
+            realtime_stats += f"[cyan]Total:[/cyan] {profit_display}"
+            
+            # Add Take Profit progress if enabled
+            if args.take_profit > 0:
+                progress_percentage = (total_payout / args.take_profit * 100) if args.take_profit > 0 else 0
+                progress_display = f"[magenta]Take Profit Progress:[/magenta] {progress_percentage:.1f}% ({total_payout:.4f}/{args.take_profit:.4f})"
+                realtime_stats += f"\n{progress_display}"
+            
             if args.win_step:
-                stats_line += f" | Step: {bot.current_step}/{len(bot.win_step_array)-1} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
+                realtime_stats += f"\n[purple]Current Step:[/purple] {bot.current_step}/{len(bot.win_step_array)-1} | "
+                realtime_stats += f"[purple]Max Step:[/purple] {bot.max_step_reached} | "
+                realtime_stats += f"[purple]Consecutive Wins:[/purple] {bot.win_step_consecutive_wins}/{bot.win_step_wins} | "
+                realtime_stats += f"[purple]Next Bet:[/purple] {bot.current_bet_amount:.4f} {args.currency.upper()}"
             elif args.martingale:
-                stats_line += f" | CurLosses: {bot.consecutive_losses} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
-            else:
-                stats_line += "[/cyan]"
-
-            console.print(stats_line)
+                realtime_stats += f"\n[purple]Consecutive Losses:[/purple] {bot.consecutive_losses} | "
+                realtime_stats += f"[purple]Max Losses:[/purple] {max_consecutive_losses} | "
+                realtime_stats += f"[purple]Next Bet:[/purple] {bot.current_bet_amount:.4f} {args.currency.upper()}"
+            
+            stats_panel = Panel(realtime_stats, title="[bold blue]📈 Live Statistics[/bold blue]", border_style="blue")
+            console.print(stats_panel)
 
             # Add a delay between games
-            time.sleep(0)
+            time.sleep(0.1)
+            console.print()
             
         except KeyboardInterrupt:
             console.print("[bold red]🛑 Bot stopped by user[/bold red]")
