@@ -2,29 +2,35 @@
 # All settings can be overridden by command line arguments
 
 # Access token (required)
-access_token: "your_access_token_here"
+# access_token: ""
+access_token: "" #jakkapong1129
+
 
 # Betting settings
-amount: 0.05              # Bet amount
+amount: 0.01              # Bet amount
 currency: "trx"           # Currency: usdt, trx, doge, ltc, btc, eth, bch, xrp, eos, bnb
-mines: 3                  # Number of mines (1-24)
-shots: 5                  # Number of shots per game (1-20)
+mines: 7                  # Number of mines (1-24)
+shots: 2                  # Number of shots per game (1-20)
 
 # Selection mode
-mode: "smart"             # Field selection: row, random, smart, heatmap, pattern
+mode: "random"             # Field selection: row, random, smart, heatmap, pattern
 retry: 3                  # Row retry count (for row mode only)
-single_shot_mode: "win-stay"  # Single shot mode: fixed, win-return, win-stay, loss-switch
+single_shot_mode: "loss-switch"  # Single shot mode: fixed, win-return, win-stay, loss-switch
 
-# Betting strategy
+# Betting strategy (เลือกได้ 1 อย่างเท่านั้น: martingale, win_step, หรือ dalembert)
 martingale: false         # Enable Martingale strategy
 wins: 4                   # Consecutive wins to reset Martingale
 multiplier: 4.0           # Martingale multiplier on loss
 max_martingale: 10        # Max martingale levels before reset
 
 # Win Step strategy (alternative to Martingale)
-win_step: false           # Enable Win Step strategy
+win_step: true           # Enable Win Step strategy
 win_step_multiplier: 2.0  # Win Step multiplier
 win_step_wins: 3          # Consecutive wins to reset to step 0
+# win_step_array: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 11, 12, 14, 16, 18, 21, 24, 27, 31, 36, 41, 47, 54, 62, 71, 81, 93, 106, 121, 138, 158, 212]
+win_step_array: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 11, 12, 14, 16, 18, 21, 24, 27, 31, 36, 41, 47, 54, 62, 71, 81, 93, 106, 212]
+# win_step_array: [1,1,1,1,2,2,3,3,4,5,6,7,8,10,12,14,16,19,22,25,29,33,38,44,50,57,65,74]  # Custom step array
+# win_step_array: [1,1,1,1,2,2,3,3,4,5,6,7,8,10,12,14,16,19,22,25,29,33,38,44,50,57,65,74,85,97,111,127,145,166,190,217,248]  # Custom step array
 
 # Take profit
 take_profit: 0            # Take profit target (0 = disabled)

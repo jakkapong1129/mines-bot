@@ -28,7 +28,7 @@ class MinesBot:
 
         # Win Step configuration
         self.use_win_step = use_win_step
-        self.win_step_array = win_step_array if win_step_array else [1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,7,8,9,11,12,14,16,18,21,24,27,31,36,41,47,54,62,71,81,93,106,121,136,153,172,193,216]
+        self.win_step_array = win_step_array if win_step_array else [1,1,1,1,2,2,3,3,4,5,6,7,8,10,12,14,16,19,22,25,29,33,38,44,50,57,65,74,85,97,111,127,145,166,190,217,248]
         self.win_step_multiplier = win_step_multiplier
         self.win_step_wins = win_step_wins
         self.current_step = 0  # Current position in step array
@@ -819,6 +819,9 @@ if __name__ == "__main__":
     if args.take_profit is None:
         args.take_profit = config.get('take_profit', 0)
 
+    # Get win_step_array from config (optional)
+    win_step_array = config.get('win_step_array', None)
+
     # Validate amount
     if args.amount <= 0:
         console.print("[bold red]❌ Error: Amount must be greater than 0[/bold red]")
@@ -892,7 +895,7 @@ if __name__ == "__main__":
         config_info += f"\n[yellow]⚠️  Win Step Strategy:[/yellow]"
         config_info += f"\n[yellow]   • Win multiplier: {args.win_step_multiplier}x[/yellow]"
         config_info += f"\n[yellow]   • Reset after {args.win_step_wins} consecutive wins[/yellow]"
-        config_info += f"\n[yellow]   • Step array: {len([1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,7,8,9,11,12,14,16,18,21,24,27,31,36,41,47,54,62,71,81,93,106,121,136,153,172,193,216])} steps[/yellow]"
+        config_info += f"\n[yellow]   • Step array: {len(win_step_array)} steps[/yellow]"
     elif args.martingale:
         config_info += f"[cyan]Strategy:[/cyan] Martingale"
         config_info += f"\n[yellow]⚠️  Martingale Strategy:[/yellow]"
@@ -919,7 +922,8 @@ if __name__ == "__main__":
                    max_martingale=args.max_martingale,
                    max_shots=args.shots, retry_count=args.retry, selection_mode=args.mode,
                    single_shot_mode=args.single_shot_mode,
-                   use_win_step=args.win_step, win_step_multiplier=args.win_step_multiplier,
+                   use_win_step=args.win_step, win_step_array=win_step_array,
+                   win_step_multiplier=args.win_step_multiplier,
                    win_step_wins=args.win_step_wins)
     
     # Check balance before starting
@@ -1045,7 +1049,7 @@ if __name__ == "__main__":
             console.print(stats_panel)
 
             # Add a delay between games
-            time.sleep(0)
+            time.sleep(0.2)
             console.print()
             
         except KeyboardInterrupt:
