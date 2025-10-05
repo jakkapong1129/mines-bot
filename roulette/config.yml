@@ -1,0 +1,32 @@
+# Roulette Bot Configuration File
+# All settings can be overridden by command line arguments
+
+# Access token (required)
+# access_token: ""
+access_token: "" #jakkapong1129
+
+
+# Betting settings
+amount: 0.01             # Bet amount
+currency: "trx"          # Currency: usdt, trx, doge, ltc, btc, eth, bch, xrp, eos, bnb
+color: "colorBlack"         # Roulette color: colorRed, colorBlack (multiplier: 2x)
+switch_after_losses: 3    # Switch to opposite color after N consecutive losses (0 = disabled)
+switch_bet_count: 2       # Number of bets with switched color (0 = until win)
+
+# Betting strategy (เลือกได้ 1 อย่างเท่านั้น: martingale หรือ win_step)
+martingale: true         # Enable Martingale strategy
+wins: 1                   # Consecutive wins to reset Martingale
+multiplier: 2.0           # Martingale multiplier on loss
+max_martingale: 10        # Max martingale levels before reset
+
+# Win Step strategy (alternative to Martingale)
+win_step: false            # Enable Win Step strategy
+win_step_multiplier: 2.0  # Win Step multiplier
+win_step_wins: 3          # Consecutive wins to reset to step 0
+# win_step_array optimized for Roulette (2x multiplier)
+# Profit per win = 100%, Need 1 win to recover 1 loss
+# Extended array for better recovery chance
+win_step_array: [1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,3,3,3,4,4,5,5,6,7,8,9,10,12,14,16,18,21,24,27,31,35,40,46,52,59,67,77,88,100,114,130,148,169,193,220]
+
+# Take profit
+take_profit: 0            # Take profit target (0 = disabled)

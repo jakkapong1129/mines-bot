@@ -262,7 +262,7 @@ class MinesBot:
         if field_number is None:
             # Special case: If max_shots = 1, alternate between field 0 and 1
             if self.max_shots == 1:
-                field_number = self.single_shot_field
+                field_number = 11
             # Check selection mode
             elif self.selection_mode == "random":
                 # Pure random selection - avoid used fields
@@ -422,6 +422,8 @@ class MinesBot:
             response = self.scraper.post(url, headers=self.headers, json=data)
             result = response.json()
 
+            # print(response.text)
+
             # Check for errors first
             if "errors" in result and result["errors"]:
                 error_msg = result["errors"][0].get("message", "Unknown error")
@@ -496,7 +498,7 @@ class MinesBot:
         if data_cashout and "minesCashout" in data_cashout:
             payout_amount = data_cashout["minesCashout"]["payout"]
             bet_amount = data_cashout["minesCashout"]["amount"]
-            
+
             # If payout is 0, it means we lost the bet
             if payout_amount == 0:
                 payout = -bet_amount  # Full loss of bet amount
@@ -510,10 +512,10 @@ class MinesBot:
                 else:
                     result_title = "[bold yellow]🏆 Game Results - BREAK EVEN[/bold yellow]"
                     result_style = "yellow"
-            
-            # Win message (cashed out successfully)
+
+            # Win message (cashed out successfully) - show profit with details
             if payout > 0:
-                console.print(f"[green]✅ WIN: +{payout:.4f}[/green]")
+                console.print(f"[green]✅ WIN: +{payout:.6f}[/green]")
             # If payout <= 0 but cashed out, don't show message (break even or small loss)
         
         # Return payout and last multiplier for Martingale calculation
@@ -663,7 +665,7 @@ class MinesBot:
                             break
 
                 if target_balance is not None:
-                    console.print(f"[bold green]💰 {currency.upper()} Balance: {target_balance}[/bold green]")
+                    console.print(f"[bold blue]💰 {currency.upper()} Balance: {target_balance}[/bold blue]")
                     return target_balance
                 else:
                     console.print(f"[bold red]❌ {currency.upper()} balance not found[/bold red]")
@@ -973,19 +975,19 @@ if __name__ == "__main__":
                 profit_display = f"[yellow]{total_payout:.4f}[/yellow]"
 
             # Compact statistics display
-            stats_line = f"[cyan]Games: {games_played} | W: {wins} L: {losses} | WinRate: {win_rate:.1f}% | Balance: {balance_display} | Total: {profit_display} | MaxLossStreak: {max_consecutive_losses}"
+            stats_line = f"[cyan]Games: {games_played} | W: {wins} L: {losses} | WinRate: {win_rate:.1f}% | Balance: {balance_display} | Total: {profit_display}"
 
             if args.win_step:
-                stats_line += f" | Step: {bot.current_step}/{len(bot.win_step_array)-1} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
+                stats_line += f" | Step: {bot.current_step}/{len(bot.win_step_array)-1} | MaxStep: {bot.max_step_reached} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
             elif args.martingale:
-                stats_line += f" | CurLosses: {bot.consecutive_losses} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
+                stats_line += f" | MaxLossStreak: {max_consecutive_losses} | CurLosses: {bot.consecutive_losses} | NextBet: {bot.current_bet_amount:.4f}[/cyan]"
             else:
                 stats_line += "[/cyan]"
 
             console.print(stats_line)
 
             # Add a delay between games
-            time.sleep(0)
+            time.sleep(0.2)
             
         except KeyboardInterrupt:
             console.print("[bold red]🛑 Bot stopped by user[/bold red]")
